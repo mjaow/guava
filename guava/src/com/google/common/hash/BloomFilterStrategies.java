@@ -46,6 +46,12 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     @Override
     public <T> boolean put(
         T object, Funnel<? super T> funnel, int numHashFunctions, LockFreeBitArray bits) {
+
+      //MURMUR128_MITZ_32算法
+
+      //通过murmur3_128 hash计算64位hash值，并截断成前32位hash1和后32位hash2
+      //第i次hash的时候，利用hash1+ (i* hash2)算出这次hash值，并完成一些后续处理（负数转正、按bitSize截断），将这些位设置成1。完成bloom filter的设值操作
+
       long bitSize = bits.bitSize();
       long hash64 = Hashing.murmur3_128().hashObject(object, funnel).asLong();
       int hash1 = (int) hash64;
@@ -66,6 +72,8 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     @Override
     public <T> boolean mightContain(
         T object, Funnel<? super T> funnel, int numHashFunctions, LockFreeBitArray bits) {
+      //参考put操作的注释
+
       long bitSize = bits.bitSize();
       long hash64 = Hashing.murmur3_128().hashObject(object, funnel).asLong();
       int hash1 = (int) hash64;
@@ -94,6 +102,9 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     @Override
     public <T> boolean put(
         T object, Funnel<? super T> funnel, int numHashFunctions, LockFreeBitArray bits) {
+
+      //与MURMUR128_MITZ_32类似，不过在计算多个hash值的时候换了一种策略
+
       long bitSize = bits.bitSize();
       byte[] bytes = Hashing.murmur3_128().hashObject(object, funnel).getBytesInternal();
       long hash1 = lowerEight(bytes);
@@ -173,9 +184,11 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
         return false;
       }
 
+      //如get方法，定位到bitIndex在long[]中的索引和掩码位
       int longIndex = (int) (bitIndex >>> LONG_ADDRESSABLE_BITS);
       long mask = 1L << bitIndex; // only cares about low 6 bits of bitIndex
 
+      //通过cas设置bitIndex为1
       long oldValue;
       long newValue;
       do {
@@ -194,8 +207,8 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     boolean get(long bitIndex) {
       /**
        * 通过bitIndex>>>6即bitIndex/64来定位该bitIndex在long[]中的位置
-       * 接着通过 1L << bitIndex得到掩码，掩码将bitIndex位置设为1，其他全为0
-       * 通过两者相与（&）来确定该位是否
+       * 接着通过 1L << bitIndex得到掩码，掩码将bitIndex位置设为1，其他全为0（1L << bitIndex == 1L << (bitIndex & (64-1))）
+       * 通过两者相与（&）来确定该位是否存在
        */
       return (data.get((int) (bitIndex >>> 6)) & (1L << bitIndex)) != 0;
     }
