@@ -408,6 +408,11 @@ public final class BloomFilter<T> implements Predicate<T>, Serializable {
   @VisibleForTesting
   static <T> BloomFilter<T> create(
       Funnel<? super T> funnel, long expectedInsertions, double fpp, Strategy strategy) {
+    //funnel：将输入数据序列化
+    //expectedInsertions：代表预期的数据量
+    //fpp：误差率
+    //strategy：序列化策略
+
     checkNotNull(funnel);
     checkArgument(
         expectedInsertions >= 0, "Expected insertions (%s) must be >= 0", expectedInsertions);
@@ -423,6 +428,8 @@ public final class BloomFilter<T> implements Predicate<T>, Serializable {
      * is proportional to -log(p), but there is not much of a point after all, e.g.
      * optimalM(1000, 0.0000000000000001) = 76680 which is less than 10kb. Who cares!
      */
+
+    //根据数据量和误差率，计算最优位数和hash次数
     long numBits = optimalNumOfBits(expectedInsertions, fpp);
     int numHashFunctions = optimalNumOfHashFunctions(expectedInsertions, numBits);
     try {

@@ -151,6 +151,7 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     private final LongAddable bitCount;
 
     LockFreeBitArray(long bits) {
+      //通过bloom中存储的位数，计算出需要多少个long类型的值来存储。如128位仅需要128/64=2个long类型数字来存储，就创建一个long数组，长度为2
       this(new long[Ints.checkedCast(LongMath.divide(bits, 64, RoundingMode.CEILING))]);
     }
 
@@ -191,6 +192,9 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     }
 
     boolean get(long bitIndex) {
+      /**
+       * 通过bitIndex>>>6找到
+       */
       return (data.get((int) (bitIndex >>> 6)) & (1L << bitIndex)) != 0;
     }
 
