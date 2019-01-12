@@ -193,7 +193,9 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
 
     boolean get(long bitIndex) {
       /**
-       * 通过bitIndex>>>6找到
+       * 通过bitIndex>>>6即bitIndex/64来定位该bitIndex在long[]中的位置
+       * 接着通过 1L << bitIndex得到掩码，掩码将bitIndex位置设为1，其他全为0
+       * 通过两者相与（&）来确定该位是否
        */
       return (data.get((int) (bitIndex >>> 6)) & (1L << bitIndex)) != 0;
     }
